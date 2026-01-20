@@ -13,6 +13,13 @@ on:
     # Allows you to run this workflow manually from the Actions tab
     workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:  # Cancel running jobs if new commits are pushed
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
     test-build-release:
         # commit the word "build" to the commit message to enable this job
@@ -25,13 +32,16 @@ jobs:
                 os: [macos-13, ubuntu-latest, windows-latest]
 
         steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
+            - uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+            - uses: actions/setup-node@v6
               with:
                   node-version: 18
                   cache: 'npm'
             - name: setup python
-              uses: actions/setup-python@v5
+              uses: actions/setup-python@v6
               with:
                 python-version: 3.12
             - run: npm ci
@@ -68,7 +78,7 @@ jobs:
                   else
                       npm run make -- --arch=universal --no-sign
                   fi
-            - uses: actions/upload-artifact@v3
+            - uses: actions/upload-artifact@v6
               with:
                   name: debug-build-${{ matrix.os }}
                   path: out/make
